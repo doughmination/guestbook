@@ -32,6 +32,6 @@ pnpx wrangler secret put TURNSTILE_SECRET
 #    Skip this step to run with just honeypot + rate limiting.
 
 # 3. Run locally / deploy
-pnpm run dev
-pnpm run deploy
+pnpm dev
+pnpm deploy
 ```

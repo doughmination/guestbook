@@ -26,7 +26,7 @@ interface PostBody {
 
 const ENTRIES_KEY = "entries";
 const MAX_ENTRIES = 1000; // keep the JSON blob bounded
-const RATE_LIMIT_SECONDS = 30; // min seconds between posts from one IP
+const RATE_LIMIT_SECONDS = 60; // min seconds between posts from one IP (also KV's minimum expirationTtl)
 
 const LIMITS = {
   name: 40,
@@ -198,17 +198,24 @@ async function handlePost(request: Request, env: Env): Promise<Response> {
 
 export default {
   async fetch(request: Request, env: Env): Promise<Response> {
-    const url = new URL(request.url);
+    try {
+      const url = new URL(request.url);
 
-    if (request.method === "OPTIONS") {
-      return new Response(null, { status: 204, headers: corsHeaders(env) });
+      if (request.method === "OPTIONS") {
+        return new Response(null, { status: 204, headers: corsHeaders(env) });
+      }
+      if (request.method === "GET") {
+        return await handleGet(url, env);
+      }
+      if (request.method === "POST") {
+        return await handlePost(request, env);
+      }
+      return json({ error: "Method not allowed." }, 405, env);
+    } catch (err) {
+      // Always attach CORS headers, even on unexpected errors, so the browser
+      // surfaces a real message instead of a masked CORS/network error.
+      console.error("[guestbook] unhandled error", err);
+      return json({ error: "Internal error." }, 500, env);
     }
-    if (request.method === "GET") {
-      return handleGet(url, env);
-    }
-    if (request.method === "POST") {
-      return handlePost(request, env);
-    }
-    return json({ error: "Method not allowed." }, 405, env);
   },
 } satisfies ExportedHandler<Env>;
